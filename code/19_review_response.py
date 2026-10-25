@@ -326,7 +326,7 @@ def main():
         for w3i in range(1, 14):
             w1, w3 = round(w1i * step, 2), round(w3i * step, 2)
             w4 = round(0.75 - w1 - w3, 2)
-            if w4 < 0.0:
+            if w4 < 0.05:   # symmetric grid: all three active weights >= 0.05
                 continue
             scj = w1 * s1 + w3 * s3 + w4 * s4
             order = np.argsort(-scj)

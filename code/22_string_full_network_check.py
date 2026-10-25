@@ -87,6 +87,70 @@ def main():
     rank_api = {r['symbol']: i + 1 for i, r in enumerate(sorted(rows, key=lambda x: -x['api_subnetwork_degree']))}
     rank_full = {r['symbol']: i + 1 for i, r in enumerate(sorted(rows, key=lambda x: -x['full_network_weighted_degree']))}
     same_order = all(rank_api[s] == rank_full[s] for s in rank_api)
+
+    # ---- sensitivity: rebuild the network component using Ensembl display names ----
+    sens = None
+    resp = Path(outpath('ensembl_symbol_resolution.json'))
+    if resp.is_file():
+        res = json.loads(resp.read_text(encoding='utf-8'))['mapping']
+        integ = list(csv.DictReader(open(outpath('de_eqtl_pip_integrated.tsv'), encoding='utf-8'), delimiter='	'))
+        hi = [r for r in integ if float(r['max_PIP']) >= 0.5 and float(r['p_DL']) < 0.05]
+        sym_of = {}
+        for r in hi:
+            sym = r['symbol'] or ((res.get(r['gene'], {}) or {}).get('symbol') or '')
+            if sym:
+                sym_of[r['gene']] = sym
+        want2 = set(sym_of.values())
+        wdeg2 = defaultdict(float)
+        with gzip.open(LINKS, 'rt', encoding='utf-8', errors='replace') as fh:
+            fh.readline()
+            for line in fh:
+                p2 = line.rstrip().split()
+                if len(p2) < 3 or float(p2[2]) < 400:
+                    continue
+                na, nb = p2n.get(p2[0]), p2n.get(p2[1])
+                if na in want2:
+                    wdeg2[na] += float(p2[2])
+                if nb in want2:
+                    wdeg2[nb] += float(p2[2])
+        sc = list(csv.DictReader(open(outpath('priority_scoring.tsv'), encoding='utf-8'), delimiter='	'))
+        base = [r for r in sc]
+        wmin2, wmax2 = min(wdeg2.values()) if wdeg2 else 0.0, max(wdeg2.values()) if wdeg2 else 0.0
+
+        def norm2(v):
+            return (v - wmin2) / (wmax2 - wmin2) if wmax2 > wmin2 else 0.0
+
+        def score(row, use_sym):
+            s4 = norm2(wdeg2.get(use_sym, 0.0))
+            return 0.35 * float(row['S1_DE']) + 0.25 * float(row['S2_eqtl']) + 0.30 * float(row['S3_PIP']) + 0.10 * s4
+
+        ranked = sorted(base, key=lambda r: -score(r, sym_of.get(r['gene'], '')))
+        new_rank = {r['gene']: i + 1 for i, r in enumerate(ranked)}
+        old_rank = {r['gene']: i + 1 for i, r in enumerate(base)}
+        top30_new = {r['gene'] for r in ranked[:30]}
+        top30_old = {r['gene'] for r in base[:30]}
+        retained = sorted(g for g in top30_old & top30_new if old_rank[g] <= 30)
+        exact = [g for g in retained if new_rank[g] == old_rank[g]]
+        moved = [{'gene': g, 'symbol': sym_of.get(g, ''), 'old_rank': old_rank[g],
+                  'new_rank': new_rank[g]} for g in retained if new_rank[g] != old_rank[g]]
+        entered = [{'gene': g, 'symbol': sym_of.get(g, ''), 'new_rank': new_rank[g],
+                    'old_rank': old_rank[g]} for g in top30_new - top30_old]
+        dropped = [{'gene': g, 'symbol': sym_of.get(g, ''), 'old_rank': old_rank[g],
+                    'new_rank': new_rank[g]} for g in top30_old - top30_new]
+        ca6 = [g for g in sym_of if sym_of[g] == 'CA6']
+        sens = {
+            'seeds_with_name': len(want2),
+            'seeds_with_string_hit': sum(1 for s in want2 if s in wdeg2),
+            'top30_overlap_with_published': len(top30_new & top30_old),
+            'top30_exact_rank_retained': len(exact),
+            'top30_moved_within_list': sorted(moved, key=lambda x: x['old_rank']),
+            'top30_entered': sorted(entered, key=lambda x: x['old_rank']),
+            'top30_dropped': sorted(dropped, key=lambda x: x['old_rank']),
+            'CA6_new_rank': (new_rank.get(ca6[0]) if ca6 else None),
+            'note': 'network component recomputed from the official STRING links file using platform symbol '
+                    'or Ensembl display name; S1/S2/S3 unchanged; normalization over the 286-seed subnetwork',
+        }
+
     out = {
         'files': {
             os.path.basename(LINKS): {'sha256': sha256(LINKS), 'bytes': os.path.getsize(LINKS)},
@@ -95,6 +159,7 @@ def main():
         'score_threshold': 400,
         'seeds': rows,
         'rank_same_order_api_vs_full': same_order,
+        'network_sensitivity_ensembl_names': sens,
         'note': 'API subnetwork degree counts edges among the returned seed subnetwork; full-network degree counts all species-wide partners (score>=400). Different quantities; only rank order is compared.',
     }
     Path(outpath('string_full_network_check.json')).write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding='utf-8')

@@ -124,7 +124,10 @@ def fig3_pip():
 
 def fig4_scoring():
     rows = list(csv.DictReader(open(os.path.join(OUT, 'top_candidates.tsv'), encoding='utf-8'), delimiter='\t'))[:20]
-    labels = [(r['symbol'] or r['gene'].replace('ENSBTAG000000', 'ENS')) for r in rows]
+    respath = os.path.join(OUT, 'ensembl_symbol_resolution.json')
+    symres = json.load(open(respath, encoding='utf-8'))['mapping'] if os.path.exists(respath) else {}
+    labels = [(r['symbol'] or symres.get(r['gene'], {}).get('symbol')
+               or r['gene'].replace('ENSBTAG000000', 'ENS')) for r in rows]
     s1 = np.array([float(r['S1_DE']) for r in rows])
     s3 = np.array([float(r['S3_PIP']) for r in rows])
     s4 = np.array([float(r['S4_network']) for r in rows])

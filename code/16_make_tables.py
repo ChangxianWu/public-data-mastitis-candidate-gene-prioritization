@@ -83,7 +83,7 @@ def main():
     lines.append('Nine cohorts (339 samples) were assembled; quantitative synthesis used seven '
                  '(257 samples: five GPL2112 microarray cohorts contributing 233 case-control '
                  'samples to the probe-level meta, and two RNA-seq cohorts contributing 24). '
-                 'GSE9685 and GSE34031 were analysed per queue but cannot enter the probe-level '
+                 'GSE9685 and GSE34031 were analyzed per queue but cannot enter the probe-level '
                  'meta because their deposited series matrices carry numeric row indices rather '
                  'than probe identifiers. GSE75379 contributes its udder arm only (24 liver '
                  'samples excluded); six endometritis samples of GSE93082 are excluded as a '
@@ -122,26 +122,35 @@ def main():
           f'| Gene-anchored (symbol layer) | {len(anch):,} | - | up {up} / down {dn} |',
           f'| Combined gene-level | {len(comb):,} | {comb_q05:,} (of {len(comb_def):,} with defined p; {comb_p05:,} at nominal p<0.05) | three-source {three} |',
           f'| x mammary eQTL overlap | {len(ov):,} | - | - |',
-          f'| Integrated (DE x significant cis-eQTL x fine-mapped) | {len(integ):,} | {int_q05:,} (of {len(int_def):,}) | high-confidence {hi} (q<0.05: {hi_q05}) |',
+          f'| Integrated (DE x significant cis-eQTL x fine-mapped) | {len(integ):,} | {int_q05:,} (of {len(int_def):,}) | high-confidence screening {hi} (FDR-controlled core {hi_q05}) |',
           '',
           'Notes. Gene-anchored is a symbol-level layer (chip probes with a platform symbol/Entrez '
           'anchor, one row per gene at its most significant probe); the combined gene-level layer '
           'maps anchors to Ensembl and adds the two RNA-seq cohorts. The two layers are therefore '
           'nested but not identical, and the 764 three-source genes are defined on the combined layer. '
-          'Gene-level BH is reported as a sensitivity (M1): the high-confidence tier is a PIP-based '
-          'screening tier, not an FDR-controlled tier; all 30 Top-30 candidates pass gene-level '
-          'q<0.05. Under the exact Welch-variance convention (S10), probe-level q<0.05 = 2,663 and '
-          '66.5% of the published Tier A probes remain significant with identical direction.']
+          'The high-confidence screening tier is PIP-based rather than FDR-controlled; its '
+          'FDR-controlled core (gene-level q<0.05) contains 75 genes, and all 30 Top-30 candidates '
+          'pass gene-level q<0.05. Under the exact Welch-variance convention (S10), probe-level '
+          'q<0.05 = 2,663 and 66.5% of the published Tier A probes remain significant with identical direction.']
     w(os.path.join(TABDIR, 'Table2_meta_summary.md'), '\n'.join(t2) + '\n')
 
     # ---- Table 3（全 286 行 + top10）----
     hi_rows = [r for r in integ if float(r['max_PIP']) >= 0.5 and float(r['p_DL']) < 0.05]
     hi_rows.sort(key=lambda r: float(r['p_DL']))
+    sym_res = {}
+    rp = rd('ensembl_symbol_resolution.json')
+    if os.path.exists(rp):
+        sym_res = json.load(open(rp, encoding='utf-8'))['mapping']
+
+    def disp_symbol(r):
+        return r['symbol'] or ((sym_res.get(r['gene'], {}) or {}).get('symbol') or '')
+    n_sym = sum(1 for r in hi_rows if disp_symbol(r))
+    n_ens = sum(1 for r in hi_rows if not sym_res.get(r['gene'], {}).get('symbol'))
 
     def t3_row(r):
         q = int_qmap.get(r['gene'])
         qs = f'{q:.2e}' if q is not None else 'NA'
-        return (f"| {r['gene']} | {r['symbol']} | {r['n_queues']} | {float(r['beta_meta']):+.2f} "
+        return (f"| {r['gene']} | {disp_symbol(r)} | {r['n_queues']} | {float(r['beta_meta']):+.2f} "
                 f"| {float(r['p_DL']):.2e} | {qs} | {float(r['max_PIP']):.2f} | {r['lead_SNP']} |")
 
     t3 = ['| Gene | Symbol | Queues | Beta | p (meta) | q (BH, integrated) | Max PIP | Lead SNP |',
@@ -150,15 +159,23 @@ def main():
     rec = json.load(open(rd('competitor_reconciled.json'), encoding='utf-8'))
     shared_txt = '; '.join(f"{sym} ({gid})" for gid, sym in sorted(rec['shared_symbols_286'].items()))
     t3.append('')
-    t3.append('Shared with the competitor gene-based set after identifier reconciliation: '
-              + shared_txt + '. ENSBTAG00000006155 (CCRL2) is rank 4 in Table 4.')
+    t3.append('Symbol column: the platform-derived symbol where one exists, otherwise the '
+              'Ensembl display name resolved through Ensembl REST (ARS-UCD2.0, accessed '
+              f'25 October 2026); {n_sym} of {len(hi_rows)} genes carry a symbol and '
+              f'{n_ens} have no Ensembl display name; the column is for display only, and the '
+              "score network component uses platform-derived symbols only. Shared with the "
+              'competitor gene-based set '
+              'after identifier reconciliation: ' + shared_txt + '. ENSBTAG00000006155 (CCRL2) '
+              'is rank 4 in Table 4.')
     w(os.path.join(TABDIR, 'Table3_high_confidence.md'), '\n'.join(t3) + '\n')
     t3t = ['| Gene | Symbol | Queues | Beta | p (meta) | q (BH, integrated) | Max PIP | Lead SNP |',
            '|---|---|---|---|---|---|---|---|']
     t3t += [t3_row(r) for r in hi_rows[:10]]
     t3t.append('')
-    t3t.append('Shared with the competitor gene-based set after identifier reconciliation: '
-               + shared_txt + '. ENSBTAG00000006155 (CCRL2) is rank 4 in Table 4.')
+    t3t.append(f'Symbol column as in the complete table ({n_sym} of {len(hi_rows)} genes carry '
+               'a symbol; Ensembl display names or platform symbols, display only). Shared with the '
+               'competitor gene-based set after identifier '
+               'reconciliation: ' + shared_txt + '. ENSBTAG00000006155 (CCRL2) is rank 4 in Table 4.')
     w(os.path.join(TABDIR, 'Table3_high_confidence_top10.md'), '\n'.join(t3t) + '\n')
 
     # ---- Table 4（Top-30，直接排版打分表）----
@@ -166,7 +183,8 @@ def main():
     t4 = ['| Rank | Gene | Symbol | Score | S1 DE | S3 PIP | S4 Net | STRING degree | Queues | Beta | p | Lead SNP | Validation |',
           '|---|---|---|---|---|---|---|---|---|---|---|---|---|']
     for r in top:
-        t4.append(f"| {r['rank']} | {r['gene']} | {r['symbol']} | {r['score']} | {round(float(r['S1_DE']),3)} "
+        dsym = r['symbol'] or ((sym_res.get(r['gene'], {}) or {}).get('symbol') or '')
+        t4.append(f"| {r['rank']} | {r['gene']} | {dsym} | {r['score']} | {round(float(r['S1_DE']),3)} "
                   f"| {round(float(r['S3_PIP']),3)} | {round(float(r['S4_network']),3)} | {r.get('STRING_degree', 0)} "
                   f"| {r['n_queues']} | {float(r['beta']):+.2f} | {float(r['p_DL']):.1e} | {r['lead_SNP']} "
                   f"| {r['validation_suggestion']} |")
@@ -191,7 +209,8 @@ def main():
     t4m = ['| Rank | Gene | Symbol | Score | S1 DE | S3 PIP | S4 Net | p | Lead SNP |',
            '|---|---|---|---|---|---|---|---|---|']
     for r in top:
-        t4m.append(f"| {r['rank']} | {r['gene']} | {r['symbol']} | {r['score']} | {round(float(r['S1_DE']),3)} "
+        dsym = r['symbol'] or ((sym_res.get(r['gene'], {}) or {}).get('symbol') or '')
+        t4m.append(f"| {r['rank']} | {r['gene']} | {dsym} | {r['score']} | {round(float(r['S1_DE']),3)} "
                    f"| {round(float(r['S3_PIP']),3)} | {round(float(r['S4_network']),3)} "
                    f"| {float(r['p_DL']):.1e} | {r['lead_SNP']} |")
     t4m.append('')
@@ -201,7 +220,9 @@ def main():
                'and S4 is the normalized STRING subnetwork weighted degree (zero for genes without '
                'a symbol-resolvable STRING hit). Per-gene follow-up suggestions, the STRING '
                'subnetwork degree and the unweighted degree are provided in Additional file 2 '
-               '(Table S11). Rank 4 (ENSBTAG00000006155) is CCRL2, one of the four '
+               '(Table S11). The Symbol column shows the platform symbol or, where absent, the '
+               'Ensembl display name (display only; the S4 network component uses platform symbols '
+               'only). Rank 4 (ENSBTAG00000006155) is CCRL2, one of the four '
                'genes shared with the competitor after identifier reconciliation.')
     w(os.path.join(TABDIR, 'Table4_top30_manuscript.md'), '\n'.join(t4m) + '\n')
     print(f'Table3 rows={len(hi_rows)}  Table4 rows={len(top)}')

@@ -83,7 +83,7 @@ def fig6_contrast():
     ax.tick_params(axis='y', labelsize=9)
     ax.grid(axis='y', color='#dddddd', lw=0.6)
     ax.set_axisbelow(True)
-    ax.set_title('Two evidence streams are near-disjoint', fontsize=11, fontweight='bold', pad=10)
+    ax.set_title('Two evidence streams show limited overlap', fontsize=11, fontweight='bold', pad=10)
     save(fig, 'Fig7_contrast_layers')
 
 

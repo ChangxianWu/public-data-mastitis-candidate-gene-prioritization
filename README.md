@@ -4,7 +4,7 @@ Code for the manuscript:
 
 > **A four-source framework for bovine mastitis candidate gene prioritization using exclusively
 > public data: a cross-cohort integrative analysis**
-> Changxian Wu, Min Wang, Fan Liu, Lingxi Ma (corresponding: 6961337@qq.com)
+> Changxian Wu, Min Wang, Fan Liu, Lingxi Ma (corresponding: lingxim26@163.com)
 > College of Agriculture and Animal Husbandry Science and Technology,
 > Ningxia Vocational and Technical College for Minorities, Wuzhong 751100, Ningxia, China
 

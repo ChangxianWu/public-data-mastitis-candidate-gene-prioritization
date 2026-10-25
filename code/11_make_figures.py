@@ -129,15 +129,30 @@ def fig4_scoring():
     s3 = np.array([float(r['S3_PIP']) for r in rows])
     s4 = np.array([float(r['S4_network']) for r in rows])
     y = np.arange(len(rows))[::-1]
-    fig, ax = plt.subplots(figsize=(7.6, 6.4))
-    ax.barh(y, s1 * 0.35, color='#4a90d9', label='DE meta (w=0.35)')
-    ax.barh(y, s3 * 0.30, left=s1 * 0.35, color='#2ca02c', label='finemapping PIP (w=0.30)')
-    ax.barh(y, s4 * 0.10, left=s1 * 0.35 + s3 * 0.30, color='#9467bd', label='STRING network (w=0.10)')
+    fig, ax = plt.subplots(figsize=(7.8, 6.8))
+    h1 = ax.barh(y, s1 * 0.35, height=0.72, color='#4a90d9', label='DE meta (w=0.35)')
+    h3 = ax.barh(y, s3 * 0.30, height=0.72, left=s1 * 0.35, color='#2ca02c',
+                 label='fine-mapping PIP (w=0.30)')
+    from matplotlib.patches import Patch
+    handles = [Patch(facecolor='#4a90d9', label='DE meta (w=0.35)'),
+               Patch(facecolor='#2ca02c', label='fine-mapping PIP (w=0.30)')]
+    if (s4 > 0).any():
+        ax.barh(y, s4 * 0.10, height=0.72, left=s1 * 0.35 + s3 * 0.30, color='#9467bd')
+        handles.append(Patch(facecolor='#9467bd', label='STRING network (w=0.10)'))
     ax.set_yticks(y)
-    ax.set_yticklabels(labels, fontsize=8)
-    ax.set_xlabel('Priority score (0-1; eQTL-presence component 0.25 not shown)')
-    ax.legend(frameon=False, fontsize=8, loc='lower right')
-    ax.set_title('Top 20 candidate genes: four-source priority scoring', fontsize=11, fontweight='bold')
+    ax.set_yticklabels(labels, fontsize=8.5)
+    ax.set_ylim(-0.7, len(rows) - 0.3)
+    ax.set_xlim(0, max(0.6, (s1 * 0.35 + s3 * 0.30 + s4 * 0.10).max() * 1.08))
+    ax.set_xlabel('Priority score (0-1; the eQTL-presence term of 0.25 is constant and not shown)',
+                  fontsize=9.5)
+    ax.tick_params(axis='x', labelsize=9)
+    ax.grid(axis='x', color='#dddddd', lw=0.6)
+    ax.set_axisbelow(True)
+    ax.legend(handles=handles, frameon=False, fontsize=8.5, ncol=len(handles),
+              loc='upper center', bbox_to_anchor=(0.5, -0.11), handlelength=1.6,
+              columnspacing=1.6)
+    ax.set_title('Top 20 candidate genes by four-source priority scoring', fontsize=11,
+                 fontweight='bold', pad=10)
     save(fig, 'Fig6_priority_scoring')
 
 

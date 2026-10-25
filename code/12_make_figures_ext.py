@@ -66,18 +66,24 @@ def fig6_contrast():
         n_comp = len(bl)
         it = set(json.load(open(os.path.join(OUT, 'mini_qtl_intersection.json'))))
     n_hi = len(load_hi())
-    fig, ax = plt.subplots(figsize=(6.4, 4.6))
-    ax.bar([0], [n_comp], color='#4a90d9', width=0.5,
-           label=f'Competitor gene-based hits\n({len(bl)} identifiers -> {n_comp} Entrez-level genes)')
-    ax.bar([1], [n_hi], color='#2ca02c', width=0.5, label=f'Our high-confidence layer (n={n_hi})')
-    ax.bar([2], [len(it)], color='#d9534f', width=0.5, label=f'Intersection (n={len(it)})')
+    fig, ax = plt.subplots(figsize=(7.0, 4.9))
+    bars = ax.bar([0, 1, 2], [n_comp, n_hi, len(it)],
+                  color=['#4a90d9', '#2ca02c', '#d9534f'], width=0.58,
+                  edgecolor='black', linewidth=0.5)
     ax.set_xticks([0, 1, 2])
-    ax.set_xticklabels(['Competitor\n(gene-based GWAS)', 'This study\n(DE+eQTL+PIP)', 'Shared'], fontsize=9)
+    ax.set_xticklabels([
+        f'Competitor gene-based\n({len(bl)} identifiers ->\n{n_comp} Ensembl genes)',
+        f'This study\n(high-confidence tier,\n{n_hi} genes)',
+        f'Shared\n({len(it)} genes)'], fontsize=9)
     for x, v in zip((0, 1, 2), (n_comp, n_hi, len(it))):
-        ax.text(x, v + 4, str(v), ha='center', fontweight='bold')
-    ax.set_ylabel('Genes')
-    ax.set_title('Two evidence streams are near-disjoint', fontsize=11, fontweight='bold')
-    ax.legend(frameon=False, fontsize=8)
+        ax.text(x, v + n_hi * 0.02, str(v), ha='center', va='bottom',
+                fontweight='bold', fontsize=11)
+    ax.set_ylim(0, n_hi * 1.18)
+    ax.set_ylabel('Number of genes', fontsize=10)
+    ax.tick_params(axis='y', labelsize=9)
+    ax.grid(axis='y', color='#dddddd', lw=0.6)
+    ax.set_axisbelow(True)
+    ax.set_title('Two evidence streams are near-disjoint', fontsize=11, fontweight='bold', pad=10)
     save(fig, 'Fig7_contrast_layers')
 
 

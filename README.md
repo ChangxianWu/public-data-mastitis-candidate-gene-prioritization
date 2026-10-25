@@ -32,7 +32,7 @@ within the integrated set; differential expression and PIP are the two rank-acti
 ## Repository layout
 
 ```
-code/                23 stage scripts (01-22, one sub-step) + postcheck_vm2.py
+code/                25 stage scripts (01-24, one sub-step) + postcheck_vm2.py
 README.md            this file
 LICENSE              MIT licence (code)
 CITATION.cff         citation metadata
@@ -48,9 +48,9 @@ MANIFEST_SHA256.txt  checksum of every file in this repository
 | GEO expression series | public GEO; accessions and download stage listed below |
 | CattleGTEx mammary eQTL files | https://cattlegtex.farmgtex.org/ (see `CATTLE_GTEX_MAMMARY_DIR` below) |
 | STRING v11.5 bovine network | https://stringdb-downloads.org/ (files and SHA-256 below) |
-| Probe-level, gene-level and per-cohort result tables; the 286-gene tier; the Top-30 table | Supplementary Tables S1-S11 (Additional file 2 of the article) |
-| Supplementary methods and results (S1-S11) | Additional file 1 of the article |
-| Figures 1-7 | the article and its figure files |
+| Probe-level, gene-level and per-cohort result tables; the 286-gene tier; the Top-30 table | Supplementary Tables S1-S12 (Additional file 2 of the article) |
+| Supplementary methods and results (S1-S12) | Additional file 1 of the article |
+| Fig. 1–7 | the article and its figure files |
 | Competitor gene identifiers | the competitor's own supplementary material (Cai et al. 2024) |
 
 The code regenerates every reported number from the public inputs; result tables are published
@@ -65,6 +65,9 @@ with the article rather than duplicated here.
 | STRING v11.5 bovine network | https://stringdb-downloads.org/ | `9913.protein.links.v11.5.txt.gz`, SHA-256 `9dde88f89998853f9c5568c1e489cdbdee3dc1311b142d7e8a743412c872731f`; `9913.protein.info.v11.5.txt.gz`, SHA-256 `16d87247e6ff0c0e0f5ee4dc0c9dcd1caa4975626dd91e076102f6ccd02f6f66` |
 | Animal QTLdb | https://www.animalgenome.org/QTLdb/ | interval layer deferred (portal under maintenance during the analysis) |
 | Competitor supplementary tables | Cai et al. 2024, Genet Sel Evol 56:54 (PMID 39009986), MOESM1 | required only by `15_competitor_layer.py` / `21_competitor_reconcile.py` |
+| External validation cohort A | GSE94056: series matrix + `GPL17645_family.soft.gz` (GEO FTP) | place under `work/data/external/`; used by `24_external_validation.py` |
+| External validation cohort B | GSE334132: `GSE334132_RAW.tar` + series matrix (GEO FTP) | per-sample TPM workbooks |
+| External validation cohort C | GSE133333: `GSE133333_mRNA_FPKM.xlsx` | 2 infected vs 3 control mammary libraries |
 
 ## Environment
 
@@ -78,12 +81,14 @@ Python 3.13 with `numpy`, `scipy`, `python-docx`, `openpyxl`: `pip install -r re
 -> 13_eqtl_integrate -> 09_string_network -> 10_priority_scoring -> 11_make_figures / 12_make_figures_ext
 -> 14_loqo -> 15_competitor_layer -> 16_make_tables
 -> 17_robustness / 18_enrichment -> 19_review_response / 20_exact_variance_sensitivity
--> 21_competitor_reconcile -> 22_string_full_network_check -> postcheck_vm2.py
+-> 21_competitor_reconcile -> 22_string_full_network_check
+-> 23_symbol_resolution -> 24_external_validation -> postcheck_vm2.py
 ```
 
 Run each script from the project root; scripts read and write under `work/`. The eQTL stage
 requires `CATTLE_GTEX_MAMMARY_DIR`; the network stage reads a frozen edge snapshot unless
-`--refresh` is passed.
+`--refresh` is passed; `23_symbol_resolution.py` queries Ensembl REST; `24_external_validation.py`
+needs the three held-out cohort files listed above.
 
 ## Headline results (as reported in the article)
 

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the manuscript and this repository."
+title: "public-data-mastitis-candidate-gene-prioritization: four-source prioritization of bovine mastitis candidate genes"
+version: "1.0"
+date-released: "2026-10-25"
+license: MIT
+authors:
+  - family-names: "Wu"
+    given-names: "Changxian"
+    affiliation: "College of Agriculture and Animal Husbandry Science and Technology, Ningxia Vocational and Technical College for Minorities, Wuzhong 751100, Ningxia, China"
+  - family-names: "Wang"
+    given-names: "Min"
+    affiliation: "College of Agriculture and Animal Husbandry Science and Technology, Ningxia Vocational and Technical College for Minorities, Wuzhong 751100, Ningxia, China"
+  - family-names: "Liu"
+    given-names: "Fan"
+    affiliation: "College of Agriculture and Animal Husbandry Science and Technology, Ningxia Vocational and Technical College for Minorities, Wuzhong 751100, Ningxia, China"
+  - family-names: "Ma"
+    given-names: "Lingxi"
+    affiliation: "College of Agriculture and Animal Husbandry Science and Technology, Ningxia Vocational and Technical College for Minorities, Wuzhong 751100, Ningxia, China"
+    email: "6961337@qq.com"
